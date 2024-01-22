@@ -1,0 +1,27 @@
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - name: JWTAuthorizationFilter
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+  application:
+    name: gateway
+
+server:
+  port: 8081
+
+security:
+  token:
+    secret: mYC3kr3Th
+admitted-urls:
+  login:        /admission/login
+  registration: /admission/registration
+  fitness-data: /fitness-data/all
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
