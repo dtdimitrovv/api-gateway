@@ -2,7 +2,7 @@ spring:
   cloud:
     gateway:
       default-filters:
-        - name: JWTAuthorizationFilter
+        - name: JwtAuthorizationFilter
       discovery:
         locator:
           enabled: true

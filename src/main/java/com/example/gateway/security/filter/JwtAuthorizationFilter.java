@@ -20,13 +20,13 @@ import static com.example.gateway.constant.ErrorConstant.INVALID_TOKEN_MESSAGE;
 import static com.example.gateway.constant.HeaderConstant.X_USER_ID_HEADER_NAME;
 
 @Component
-public class JWTAuthorizationFilter extends AbstractGatewayFilterFactory {
+public class JwtAuthorizationFilter extends AbstractGatewayFilterFactory {
 
     private final RedisService redisService;
     private final JwtGenerator jwtGenerator;
     private final List<String> admittedUrls;
 
-    public JWTAuthorizationFilter(RedisService redisService,
+    public JwtAuthorizationFilter(RedisService redisService,
                                   JwtGenerator jwtGenerator,
                                   @Value("${admitted-urls}") List<String> admittedUrls) {
         this.redisService = redisService;
