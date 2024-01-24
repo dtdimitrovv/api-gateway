@@ -1,7 +1,6 @@
 package com.example.gateway.security.filter;
 
-import com.example.gateway.exception.UserNotAuthorizedException;
-import com.example.gateway.security.AuthConstants;
+import com.example.gateway.constant.AuthConstant;
 import com.example.gateway.security.JwtGenerator;
 import com.example.gateway.service.RedisService;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,14 +28,10 @@ public class JWTAuthorizationFilter extends AbstractGatewayFilterFactory {
 
     public JWTAuthorizationFilter(RedisService redisService,
                                   JwtGenerator jwtGenerator,
-                                  @Value("${admitted-urls.login}") String loginUrl,
-                                  @Value("${admitted-urls.registration}") String registrationUrl,
-                                  @Value("${admitted-urls.fitness-data}") String fitnessDataUrl) {
+                                  @Value("${admitted-urls}") List<String> admittedUrls) {
         this.redisService = redisService;
         this.jwtGenerator = jwtGenerator;
-        this.loginUrl = loginUrl;
-        this.registerUrl = registrationUrl;
-        this.fitnessDataUrl = fitnessDataUrl;
+        this.admittedUrls = admittedUrls;
     }
 
     @Override
@@ -62,23 +57,27 @@ public class JWTAuthorizationFilter extends AbstractGatewayFilterFactory {
 
             var token = header
                     .get(0)
-                    .replace(AuthConstants.TOKEN_PREFIX, "");
+                    .replace(AuthConstant.TOKEN_PREFIX, EMPTY_STRING);
 
             if (this.redisService.isBlackListed(token)) {
-                throw new IllegalAccessError("Token is blacklisted!");
+                throw new IllegalAccessError(BLACKLISTED_TOKEN_MESSAGE);
             }
 
             try {
-                var id = this.redisService.getById(token);
-                if (id == null) {
-                    var decodedJWT = this.jwtGenerator.decodeToken(token);
-                    id = Long.parseLong(decodedJWT.getClaim("User-Id").toString());
-                    this.redisService.cache(token, id);
-                }
+                var id = Optional.ofNullable(this.redisService.getById(token))
+                        .orElseGet(() -> {
+                                    var decodedJwt = this.jwtGenerator.decodeToken(token);
+                                    var idClaim = Long.parseLong(decodedJwt.getClaim(USER_ID_CLAIM).toString());
+                                    this.redisService.cache(token, idClaim);
+
+                                    return idClaim;
+                                }
+                        );
+
                 var modifiedRequest = exchange
                         .getRequest()
                         .mutate()
-                        .header("X-User-Id", String.valueOf(id))
+                        .header(X_USER_ID_HEADER_NAME, String.valueOf(id))
                         .build();
 
                 return chain.filter(
@@ -89,17 +88,9 @@ public class JWTAuthorizationFilter extends AbstractGatewayFilterFactory {
                 );
             } catch (Exception ex) {
                 this.redisService.blackList(token);
-                throw new Error("Token invalid");
-            }
 
-//            var req = exchange.getRequest();
-//
-//            var request = req
-//                    .mutate()
-//                    .header("X-Authorization-Id", String.valueOf(1))
-//                    .build();
-//            return chain.filter(exchange.mutate().request(request).build());
-//            return chain.filter(exchange);
+                throw new Error(INVALID_TOKEN_MESSAGE);
+            }
         };
     }
 }
