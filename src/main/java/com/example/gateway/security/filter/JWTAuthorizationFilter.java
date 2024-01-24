@@ -8,17 +8,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 import javax.ws.rs.core.HttpHeaders;
+import java.util.List;
+import java.util.Optional;
+
+import static com.example.gateway.constant.AuthConstant.EMPTY_STRING;
+import static com.example.gateway.constant.ClaimConstant.USER_ID_CLAIM;
+import static com.example.gateway.constant.ErrorConstant.BLACKLISTED_TOKEN_MESSAGE;
+import static com.example.gateway.constant.ErrorConstant.INVALID_TOKEN_MESSAGE;
+import static com.example.gateway.constant.HeaderConstant.X_USER_ID_HEADER_NAME;
 
 @Component
 public class JWTAuthorizationFilter extends AbstractGatewayFilterFactory {
 
     private final RedisService redisService;
     private final JwtGenerator jwtGenerator;
-    private final String loginUrl;
-    private final String registerUrl;
-    private final String fitnessDataUrl;
+    private final List<String> admittedUrls;
 
     public JWTAuthorizationFilter(RedisService redisService,
                                   JwtGenerator jwtGenerator,
@@ -46,15 +53,10 @@ public class JWTAuthorizationFilter extends AbstractGatewayFilterFactory {
                     .get(HttpHeaders.AUTHORIZATION);
 
             if (header == null) {
-                if (url.equals(this.loginUrl) || url.equals(this.registerUrl) || url.equals(this.fitnessDataUrl)) {
-//                    return chain.filter(exchange);
-                } else {
-                    try {
-                        throw new UserNotAuthorizedException();
-                    } catch (UserNotAuthorizedException e) {
-                        e.printStackTrace();
-                    }
+                if (!this.admittedUrls.contains(url)) {
+                    return Mono.empty();
                 }
+
                 return chain.filter(exchange);
             }
 
