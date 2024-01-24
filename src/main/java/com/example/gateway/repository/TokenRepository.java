@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
+import java.util.Optional;
 
 @Configuration
 @Repository
@@ -17,11 +18,9 @@ public class TokenRepository {
     }
 
     public boolean isBlacklisted(String token) {
-        var cachedToken = this.valueOperations.get(token);
-        if (cachedToken != null) {
-            return cachedToken == -1L;
-        }
-        return false;
+        return Optional.ofNullable(this.valueOperations.get(token))
+                .map(cacheToken -> cacheToken.equals(-1L))
+                .orElse(Boolean.FALSE);
     }
 
     public Long getId(String token) {

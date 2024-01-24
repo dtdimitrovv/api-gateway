@@ -2,7 +2,7 @@ spring:
   cloud:
     gateway:
       default-filters:
-        - name: JWTAuthorizationFilter
+        - name: JwtAuthorizationFilter
       discovery:
         locator:
           enabled: true
@@ -15,11 +15,9 @@ server:
 
 security:
   token:
-    secret: mYC3kr3Th
-admitted-urls:
-  login:        /admission/login
-  registration: /admission/registration
-  fitness-data: /fitness-data/all
+    secret:
+
+admitted-urls: /admission/login, /admission/registration, /fitness-data/all
 
 eureka:
   client:
